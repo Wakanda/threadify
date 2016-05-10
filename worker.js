@@ -35,6 +35,12 @@ function handleRequest(port, request){
 				throw "'__init__' and '__info__' are reserved actions"
 			}
 			
+			if(typeof actions["init"] === "undefined"){
+				sendResult(port, "ready");
+				
+				return;
+			}
+			
 			actions.init();
 			
 			sendResult(port, "ready");
