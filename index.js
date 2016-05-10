@@ -91,13 +91,14 @@ threadify.run	= function(params){
 };
 
 threadify.require = function(namespaceID){
+	var _namespaceID = (typeof namespaceID === "undefined") ? DEFAULTS.NAMESPACE : namespaceID;
 	try{
-		var modulePath	= storage[namespaceID].module;
+		var modulePath	= storage[_namespaceID].module;
 	}catch(e){
 		throw {
 			"code" : "UNKNOWN_NAMESPACE",
 			"data"	: {
-				"namespace" : namespaceID,
+				"namespace" : _namespaceID,
 				"exception"	: e
 			}
 		}
@@ -152,7 +153,7 @@ function startWorker(info){
 			});			
 		} else {
 			/*
-			 * Received an error or a ready
+			 * Received a response (might be an error)
 			 */
 			created = true;
 			exitWait();
