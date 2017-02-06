@@ -3,7 +3,7 @@ var DEFAULTS = {
 	QUEUE                    : true,
 	RESPONSE_TIMEOUT         : 5000,
 	CREATION_TIMEOUT         : 5000,
-	WORKER_TYPE              : 'SharedWorker',
+	WORKER_TYPE              : 'NodeWorker',
 	MAX_WORKERS_PER_CATEGORY : 10
 };
 
