@@ -1,4 +1,5 @@
 var actions;
+var MAX_ACTION_WAIT = 20000;
 
 onconnect = function(event){
 	var port = event.ports[0];
@@ -43,11 +44,17 @@ function handleRequest(port, request){
 				return;
 			}
 			
-			actions.init();
+			if(actions.init.length >= 1){
+				actions.init(function(){
+					exitWait();
+				});
+				wait(MAX_ACTION_WAIT);
+			} else {
+				actions.init();
+			}
 			
 			sendResult(port, 'ready');
 		}catch(e){
-			debugger;
 			console.log('An error occured during the initialization of : ' + data.module);
 			
 			sendError(port, {
@@ -63,7 +70,6 @@ function handleRequest(port, request){
 		try{
 			_actions = require(request.modulePath);
 		}catch(e){
-			debugger;
 			console.log('couldn\'t require the module [' + data.module + ']');
 			
 			sendError(port, {
@@ -74,10 +80,17 @@ function handleRequest(port, request){
 		
 		if(_actions && _actions.init && typeof(_actions.__init__ ) === "undefined"){
 			try{
-				_actions.init();
+				if(_actions.init.length >= 1){
+					_actions.init(function(){
+						exitWait();
+					});
+					wait(MAX_ACTION_WAIT);
+				} else {
+					_actions.init();
+				}
+				
 				_actions.__init__ = true;
 			}catch(e){
-				debugger;
 				console.log('An error occured during the initialization of : ' + data.module);
 				
 				sendError(port, {
@@ -100,8 +113,17 @@ function handleRequest(port, request){
 		return;
 	}
 	
-	try{		
-		result = _actions[action](data);
+	try{
+		if(_actions[action].length >= 2){
+			_actions[action](data, function(_result){
+				result = _result;
+				exitWait();
+			});
+			wait(MAX_ACTION_WAIT);
+
+		} else {
+			result = _actions[action](data);
+		}
 	}catch(e){
 		sendError(port, {
 			'code'	: 'RUNTIME',

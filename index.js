@@ -65,6 +65,7 @@ function _require(moduleID, reserved, workerType){
 
 function runActionAndReleaseWorker(worker, params){
 	var port = worker.port;
+	var noResponse;
 	
 	port.onmessage = function(message){	
 		response	= message.data;
@@ -237,6 +238,7 @@ function createWorker(params){
 				reserved : params.reserved
 			});			
 		} else {
+			console.log("else");
 			/*
 			 * Received an error or a ready
 			 * TODO : Handle errors
