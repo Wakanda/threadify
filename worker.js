@@ -45,15 +45,20 @@ function handleRequest(port, request){
 			}
 			
 			if(actions.init.length >= 1){
-				actions.init(function(){
-					exitWait();
+				actions.init(function(error){
+					if(error){
+						sendError(port, {
+							'code'	: 'RESERVED_MODULE_INIT_ERROR',
+							'data'	: error
+						});
+					}else{
+						sendResult(port, 'ready');						
+					}
 				});
-				wait(MAX_ACTION_WAIT);
 			} else {
 				actions.init();
+				sendResult(port, 'ready');
 			}
-			
-			sendResult(port, 'ready');
 		}catch(e){
 			console.log('An error occured during the initialization of : ' + data.module);
 			
@@ -81,57 +86,72 @@ function handleRequest(port, request){
 		if(_actions && _actions.init && typeof(_actions.__init__ ) === "undefined"){
 			try{
 				if(_actions.init.length >= 1){
-					_actions.init(function(){
-						exitWait();
+					_actions.init(function(error){
+						if(error){
+							sendError(port, {
+								'code'	: 'UNRESERVED_MODULE_INIT_ERROR',
+								'data'	: error
+							});
+						} else {
+							runAction();
+						}
 					});
-					wait(MAX_ACTION_WAIT);
 				} else {
 					_actions.init();
+					runAction();
 				}
 				
 				_actions.__init__ = true;
 			}catch(e){
-				console.log('An error occured during the initialization of : ' + data.module);
-				
 				sendError(port, {
 					'code'	: 'UNRESERVED_MODULE_INIT_ERROR',
 					'data'	: e
 				});
 			}
+		} else if(_actions) {
+			runAction();
 		}
 	}
 	
-	if(typeof _actions[action] === 'undefined'){
-		sendError(port, {
-			'code'	: 'UNKNOWN_ACTION',
-			'data'  : {
-				'modulePath' : data.modulePath,
-				'action'     : action
-			}
-		});
-		
-		return;
-	}
-	
-	try{
-		if(_actions[action].length >= 2){
-			_actions[action](data, function(_result){
-				result = _result;
-				exitWait();
+	function runAction(){
+		if(typeof _actions[action] === 'undefined'){
+			sendError(port, {
+				'code'	: 'UNKNOWN_ACTION',
+				'data'  : {
+					'modulePath' : data.modulePath,
+					'action'     : action
+				}
 			});
-			wait(MAX_ACTION_WAIT);
-
-		} else {
-			result = _actions[action](data);
+			
+			return;
 		}
-	}catch(e){
-		sendError(port, {
-			'code'	: 'RUNTIME',
-			'data'	: e
-		});
+		
+		if(_actions[action].length >= 2){
+			_actions[action](data,
+			function(error, result){
+				if(error){
+					sendError(port, {
+						'code'	: 'RUNTIME',
+						'data'	: error
+					});
+				} else {
+					sendResult(port, result);					
+				}
+			});
+			
+			return;
+		} else {
+			try{
+				result = _actions[action](data);			
+			}catch(e){
+				sendError(port, {
+					'code'	: 'RUNTIME',
+					'data'	: e
+				});
+			}
+			sendResult(port, result);
+		}
 	}
-	
-	sendResult(port, result);
 }
 
 function sendError(port, error){

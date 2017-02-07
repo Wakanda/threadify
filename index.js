@@ -1,8 +1,8 @@
 var DEFAULTS = {
 	NAMESPACE                : 'WAKANDA::THREADIFY',
 	QUEUE                    : true,
-	RESPONSE_TIMEOUT         : 5000,
-	CREATION_TIMEOUT         : 5000,
+	RESPONSE_TIMEOUT         : 20000,
+	CREATION_TIMEOUT         : 20000,
 	WORKER_TYPE              : 'NodeWorker',
 	MAX_WORKERS_PER_CATEGORY : 10
 };
@@ -65,7 +65,7 @@ function _require(moduleID, reserved, workerType){
 
 function runActionAndReleaseWorker(worker, params){
 	var port = worker.port;
-	var noResponse;
+	var noResponse = true;
 	
 	port.onmessage = function(message){	
 		response	= message.data;
@@ -236,9 +236,8 @@ function createWorker(params){
 				action   : '__init__',
 				data     : params,
 				reserved : params.reserved
-			});			
+			});
 		} else {
-			console.log("else");
 			/*
 			 * Received an error or a ready
 			 * TODO : Handle errors
