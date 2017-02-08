@@ -1,4 +1,5 @@
 var actions;
+var MAX_ACTION_WAIT = 20000;
 
 onconnect = function(event){
 	var port = event.ports[0];
@@ -43,11 +44,22 @@ function handleRequest(port, request){
 				return;
 			}
 			
-			actions.init();
-			
-			sendResult(port, 'ready');
+			if(actions.init.length >= 1){
+				actions.init(function(error){
+					if(error){
+						sendError(port, {
+							'code'	: 'RESERVED_MODULE_INIT_ERROR',
+							'data'	: error
+						});
+					}else{
+						sendResult(port, 'ready');						
+					}
+				});
+			} else {
+				actions.init();
+				sendResult(port, 'ready');
+			}
 		}catch(e){
-			debugger;
 			console.log('An error occured during the initialization of : ' + data.module);
 			
 			sendError(port, {
@@ -63,7 +75,6 @@ function handleRequest(port, request){
 		try{
 			_actions = require(request.modulePath);
 		}catch(e){
-			debugger;
 			console.log('couldn\'t require the module [' + data.module + ']');
 			
 			sendError(port, {
@@ -74,42 +85,73 @@ function handleRequest(port, request){
 		
 		if(_actions && _actions.init && typeof(_actions.__init__ ) === "undefined"){
 			try{
-				_actions.init();
+				if(_actions.init.length >= 1){
+					_actions.init(function(error){
+						if(error){
+							sendError(port, {
+								'code'	: 'UNRESERVED_MODULE_INIT_ERROR',
+								'data'	: error
+							});
+						} else {
+							runAction();
+						}
+					});
+				} else {
+					_actions.init();
+					runAction();
+				}
+				
 				_actions.__init__ = true;
 			}catch(e){
-				debugger;
-				console.log('An error occured during the initialization of : ' + data.module);
-				
 				sendError(port, {
 					'code'	: 'UNRESERVED_MODULE_INIT_ERROR',
 					'data'	: e
 				});
 			}
+		} else if(_actions) {
+			runAction();
 		}
 	}
 	
-	if(typeof _actions[action] === 'undefined'){
-		sendError(port, {
-			'code'	: 'UNKNOWN_ACTION',
-			'data'  : {
-				'modulePath' : data.modulePath,
-				'action'     : action
-			}
-		});
+	function runAction(){
+		if(typeof _actions[action] === 'undefined'){
+			sendError(port, {
+				'code'	: 'UNKNOWN_ACTION',
+				'data'  : {
+					'modulePath' : data.modulePath,
+					'action'     : action
+				}
+			});
+			
+			return;
+		}
 		
-		return;
+		if(_actions[action].length >= 2){
+			_actions[action](data,
+			function(error, result){
+				if(error){
+					sendError(port, {
+						'code'	: 'RUNTIME',
+						'data'	: error
+					});
+				} else {
+					sendResult(port, result);					
+				}
+			});
+			
+			return;
+		} else {
+			try{
+				result = _actions[action](data);			
+			}catch(e){
+				sendError(port, {
+					'code'	: 'RUNTIME',
+					'data'	: e
+				});
+			}
+			sendResult(port, result);
+		}
 	}
-	
-	try{		
-		result = _actions[action](data);
-	}catch(e){
-		sendError(port, {
-			'code'	: 'RUNTIME',
-			'data'	: e
-		});
-	}
-	
-	sendResult(port, result);
 }
 
 function sendError(port, error){
