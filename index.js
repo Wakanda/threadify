@@ -79,18 +79,8 @@ function runActionAndReleaseWorker(worker, params) {
 
 		response.id = worker.id;
 
-		console.log(JSON.stringify(response));
-
 		if (kind === '__info__' && data === 'connected') {
 			connected = true;
-
-			console.log(JSON.stringify({
-				workerID: worker.id,
-				modulePath: params.modulePath,
-				reserved: params.reserved,
-				action: params.action,
-				data: params.data
-			}));
 
 			port.postMessage({
 				modulePath: params.modulePath,
@@ -262,19 +252,13 @@ function createWorker(params) {
 		var kind = response.kind;
 		var data = response.data;
 		response.workerID = id;
-		console.log(JSON.stringify(response));
+
 		if (kind === '__info__' && data === 'connected') {
 			created = true;
 			if (response.ready) {
 				ready = true;
 				exitWait();
 			} else {
-				console.log(JSON.stringify({
-					kind: '__info__',
-					action: 'set',
-					data: workerInfo,
-					workerID: id
-				}));
 				port.postMessage({
 					kind: '__info__',
 					action: 'set',
@@ -295,7 +279,6 @@ function createWorker(params) {
 			message: 'worker creation timeout'
 		}
 	}
-	console.log("==WORKER CREATED==")
 	return workerInfo;
 }
 

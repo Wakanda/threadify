@@ -15,12 +15,6 @@ onconnect = function (event) {
 			return;
 		}
 
-		console.log(JSON.stringify({
-			kind: request.kind,
-			action: request.action,
-			data: request.data
-		}));
-
 		handleRequest(port, request);
 	};
 
